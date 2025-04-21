@@ -3,6 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
+	"net/http"
+
+	"github.com/go-chi/chi"
+	"github.com/PES2UG22CS135_168_184_186_Raft3D/Raft3D/api"
+	"github.com/PES2UG22CS135_168_184_186_Raft3D/Raft3D/raft"
 )
 
 func main() {
@@ -12,5 +18,24 @@ func main() {
 	dataDir := flag.String("data", "/tmp/raft3d", "Raft data directory")
 	joinAddr := flag.String("join", "", "Join address if not bootstrapping")
 	flag.Parse()
-	fmt.Println(*nodeID, *httpAddr, *raftAddr, *dataDir, *joinAddr)
+
+	fsm := raft.NewFSM()
+	join := *joinAddr != ""
+
+	raftNode, _, err := raft.SetupRaft(*nodeID, *raftAddr, *dataDir, fsm, join, *joinAddr) 
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	r := chi.NewRouter()
+	api.RegisterRoutes(r, raftNode, fsm)
+
+	cfgFuture := raftNode.GetConfiguration()
+	if err := cfgFuture.Error(); err == nil {
+		for _, server := range cfgFuture.Configuration().Servers {
+			fmt.Println("Cluster member:", server.ID, server.Address)
+		}
+	} 
+	fmt.Printf("[%s] HTTP server listening at %s\n", *nodeID, *httpAddr)
+	http.ListenAndServe(*httpAddr, r)
 }
