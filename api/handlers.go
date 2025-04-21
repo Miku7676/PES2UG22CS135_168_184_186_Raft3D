@@ -128,16 +128,6 @@ func createFilamentsHandler(w http.ResponseWriter, r *http.Request, raftNode *ha
 	var req store.Filament
 	json.NewDecoder(r.Body).Decode(&req)
 
-	// for _, entry := range req.Entries {
-	// 	payload, _ := json.Marshal(entry.Value)
-	// 	cmd, _ := json.Marshal(store.Command{Type: store.AddFilament, Payload: payload})
-	// 	f := raftNode.Apply(cmd, 5*time.Second)
-	// 	if err := f.Error(); err != nil {
-	// 		log.Println("Apply failed:", err)
-	// 		http.Error(w, err.Error(), http.StatusInternalServerError)
-	// 		return
-	// 	}
-	// }
 
 	if req.ID == "" {
 		http.Error(w, "Printer ID is required", http.StatusBadRequest)
@@ -191,16 +181,7 @@ func createPrintJobsHandler(w http.ResponseWriter, r *http.Request, raftNode *ha
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
-	// for _, entry := range req.Entries {
-	// 	payload, _ := json.Marshal(entry.Value)
-	// 	cmd, _ := json.Marshal(store.Command{Type: store.AddJob, Payload: payload})
-	// 	f := raftNode.Apply(cmd, 5*time.Second)
-	// 	if err := f.Error(); err != nil {
-	// 		log.Println("Apply failed:", err)
-	// 		http.Error(w, err.Error(), http.StatusInternalServerError)
-	// 		return
-	// 	}
-	// }
+
 
 	if req.ID == "" {
 		http.Error(w, "Printer ID is required", http.StatusBadRequest)
