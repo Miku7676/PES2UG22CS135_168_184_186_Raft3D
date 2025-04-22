@@ -6,7 +6,7 @@ import (
 	"io"
 	"sync"
 
-	"github.com/Miku7676/Raft3D/store"
+	"github.com/Miku7676/PES2UG22CS135_168_184_186_Raft3D/store"
 	hashicraft "github.com/hashicorp/raft"
 )
 
@@ -61,8 +61,78 @@ func (f *FSM) Apply(log *hashicraft.Log) interface{} {
 		j.Status = store.Queued
 		f.Jobs[j.ID] = j
 
-	}
+	case store.UpdateJob:
+		var updateJob store.PrintJob
+		if err := json.Unmarshal(cmd.Payload, &updateJob); err != nil {
+			fmt.Printf("Error in job update: %v\n", err)
+			return err
+		}
 
+		existingJob, ok := f.Jobs[updateJob.ID]
+		if !ok {
+			fmt.Printf("Job %s not found for update\n", updateJob.ID)
+			return fmt.Errorf("job %s not found", updateJob.ID)
+		}
+
+
+		// if job, ok := f.Jobs[j.ID]; ok {
+		// 	if (j.Status == store.Running && job.Status == store.Queued) ||
+		// 		(j.Status == store.Done && job.Status == store.Running) ||
+		// 		(j.Status == store.Cancelled && (job.Status == store.Queued || job.Status == store.Running)) {
+		//
+		// 		if j.Status == store.Done {
+		// 			fl := f.Filaments[j.FilamentID]
+		// 			fl.RemainingWeight -= j.Weight
+		// 			f.Filaments[j.FilamentID] = fl
+		// 		}
+		//
+		// 		job.Status = j.Status
+		// 		f.Jobs[j.ID] = job
+		// 	}
+		// }
+
+		validTransition := false
+
+		switch updateJob.Status {
+		case store.Running:
+			validTransition = existingJob.Status == store.Queued
+		case store.Done:
+			validTransition = existingJob.Status == store.Running
+		case store.Cancelled:
+			validTransition = existingJob.Status == store.Queued || existingJob.Status == store.Running
+		default:
+			validTransition = false
+		}
+
+		if !validTransition {
+			fmt.Printf("Invalid status transition from %s to %s\n", existingJob.Status, updateJob.Status)
+			return fmt.Errorf("invalid status transition from %s to %s", existingJob.Status, updateJob.Status)
+		}
+
+		// Update job status
+		existingJob.Status = updateJob.Status
+
+		// If job is done, update filament weight
+		if updateJob.Status == store.Done {
+			filament, filamentExists := f.Filaments[existingJob.FilamentID]
+			if filamentExists {
+				fmt.Printf("Updating filament %s weight from %d to %d\n", 
+					existingJob.FilamentID, 
+					filament.RemainingWeight, 
+					filament.RemainingWeight - existingJob.Weight)
+
+				filament.RemainingWeight -= existingJob.Weight
+				f.Filaments[existingJob.FilamentID] = filament
+			} else {
+				fmt.Printf("Filament %s not found\n", existingJob.FilamentID)
+			}
+		}
+
+		// Save updated job
+		f.Jobs[updateJob.ID] = existingJob
+
+		fmt.Printf("Job %s updated to status %s\n", existingJob.ID, existingJob.Status)
+	}
 	return nil
 }
 

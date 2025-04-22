@@ -7,8 +7,8 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi"
-	"github.com/PES2UG22CS135_168_184_186_Raft3D/Raft3D/api"
-	"github.com/PES2UG22CS135_168_184_186_Raft3D/Raft3D/raft"
+	"github.com/Miku7676/PES2UG22CS135_168_184_186_Raft3D/api"
+	"github.com/Miku7676/PES2UG22CS135_168_184_186_Raft3D/raft"
 )
 
 func main() {
